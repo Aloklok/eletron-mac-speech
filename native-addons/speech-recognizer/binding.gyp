@@ -1,4 +1,3 @@
-// 文件：native-addons/speech-recognizer/binding.gyp
 {
   "targets": [
     {
