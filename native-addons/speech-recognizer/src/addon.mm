@@ -1,8 +1,7 @@
-// 文件：native-addons/speech-recognizer/src/addon.mm
 #import <Foundation/Foundation.h>
 #include "addon.h"
-@import speech_recognizer;
-
+// Use the explicit header import, which is more reliable with multiple targets
+#import "speech_recognizer-Swift.h"
 Napi::FunctionReference SpeechRecognizerWrapper::constructor;
 
 Napi::Object SpeechRecognizerWrapper::Init(Napi::Env env, Napi::Object exports) {
