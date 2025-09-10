@@ -1,0 +1,22 @@
+{
+  "name": "add-on-speech",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "addon:configure": "node-gyp --directory native-addons/speech-recognizer configure -- -f xcode",
+    "addon:build": "xcodebuild -project native-addons/speech-recognizer/build/binding.xcodeproj -configuration Release -alltargets"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.15.1",
+  "devDependencies": {
+    "electron": "28.0.0",
+    "node-gyp": "^11.4.2"
+  },
+  "dependencies": {
+    "node-addon-api": "^8.5.0"
+  }
+}

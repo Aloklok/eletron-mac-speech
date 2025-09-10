@@ -1,0 +1,25 @@
+# 操作系统生成的文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# 依赖文件夹 (最重要的一条！)
+/node_modules
+
+# 构建产物目录
+/dist
+/dist-electron
+/release
+/build
+
+# 环境变量文件 (不应该上传，包含敏感信息)
+.env
+.env.local
+
+# 临时文件
+*.lock
