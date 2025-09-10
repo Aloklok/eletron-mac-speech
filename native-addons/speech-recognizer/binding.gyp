@@ -13,8 +13,7 @@
         "<!(node -p \"require('node-addon-api').gyp\")"
       ],
       
-      // "defines" section is now empty or removed.
-      // The problematic line "NAPI_DISABLE_CPP_EXCEPTIONS" is gone.
+
       "defines": [], 
 
       "xcode_settings": {
