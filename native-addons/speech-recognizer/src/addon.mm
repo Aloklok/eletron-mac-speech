@@ -62,23 +62,31 @@ void SpeechRecognizerWrapper::Stop(const Napi::CallbackInfo& info) {
     [recognizer stop];
 }
 
-// 【关键修正】完全在 Objective-C++ 中实现权限请求
+
+// 文件：addon.mm (RequestAuthorization 最终健壮版)
+
 Napi::Value SpeechRecognizerWrapper::RequestAuthorization(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
-    auto deferred = Napi::Promise::Deferred::New(env);
+    // 【关键修正 1】在堆上创建 deferred 对象，并用智能指针管理
+    auto deferred = new Napi::Promise::Deferred(env);
     
     [SFSpeechRecognizer requestAuthorization:^(SFSpeechRecognizerAuthorizationStatus status) {
-        // 确保在主线程上操作 Promise
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (status == SFSpeechRecognizerAuthorizationStatusAuthorized) {
-                deferred.Resolve(Napi::Boolean::New(env, true));
-            } else {
-                deferred.Resolve(Napi::Boolean::New(env, false));
-            }
-        });
+        // 这个回调块会在未来的某个时刻在主线程上被调用
+        
+        // 【关键修正 2】创建一个 CallbackScope 来确保 N-API 在正确的上下文中运行
+        Napi::CallbackScope scope(deferred->Env());
+        
+        if (status == SFSpeechRecognizerAuthorizationStatusAuthorized) {
+            deferred->Resolve(Napi::Boolean::New(deferred->Env(), true));
+        } else {
+            deferred->Resolve(Napi::Boolean::New(deferred->Env(), false));
+        }
+        
+        // 【关键修正 3】手动删除在堆上创建的 deferred 对象
+        delete deferred;
     }];
     
-    return deferred.Promise();
+    return deferred->Promise();
 }
 
 Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
