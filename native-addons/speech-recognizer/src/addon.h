@@ -10,9 +10,15 @@ public:
 
 private:
     static Napi::FunctionReference constructor;
+    // 【新增】声明一个静态方法包装器
+    static Napi::Value RequestAuthorization(const Napi::CallbackInfo& info); 
+};
+
     void Start(const Napi::CallbackInfo& info);
     void Stop(const Napi::CallbackInfo& info);
 
+
+    
     // Objective-C/Swift 对象的指针
     id swiftRecognizer;
 
