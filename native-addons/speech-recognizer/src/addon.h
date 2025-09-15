@@ -1,4 +1,4 @@
-// 文件：native-addons/speech-recognizer/src/addon.h (最终版)
+// 文件：addon.h (最终版)
 #pragma once
 #include <napi.h>
 
@@ -14,7 +14,6 @@ private:
     void Start(const Napi::CallbackInfo& info);
     void Stop(const Napi::CallbackInfo& info);
 
-    // 【加回来】将 constructor 声明为私有静态成员
     static Napi::FunctionReference constructor;
 
     id swiftRecognizer;
