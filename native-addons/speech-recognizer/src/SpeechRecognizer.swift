@@ -1,6 +1,19 @@
 import Speech
 import AVFoundation
 
+  // 【新增】创建一个专门用于处理静态/全局任务的类
+@objc(SpeechRecognizerManager)
+public class SpeechRecognizerManager: NSObject {
+    // 【新增】将权限请求方法放在这个新类里
+    @objc public static func requestAuthorization(completion: @escaping (Bool) -> Void) {
+        SFSpeechRecognizer.requestAuthorization { authStatus in
+            DispatchQueue.main.async {
+                completion(authStatus == .authorized)
+            }
+        }
+    }
+}
+
 // @objc 标记是为了让这个类和它的方法能被 Objective-C 代码看到和调用
 @objc(SpeechRecognizer)
 public class SpeechRecognizer: NSObject {
@@ -21,14 +34,10 @@ public class SpeechRecognizer: NSObject {
         super.init()
     }
 
-    // 请求权限
-    @objc public func requestAuthorization(completion: @escaping (Bool) -> Void) {
-        SFSpeechRecognizer.requestAuthorization { authStatus in
-            DispatchQueue.main.async {
-                completion(authStatus == .authorized)
-            }
-        }
-    }
+
+  
+    
+   
 
     // 开始识别
     @objc public func start() {
