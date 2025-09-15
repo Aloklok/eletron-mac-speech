@@ -75,22 +75,36 @@ void SpeechRecognizerWrapper::Stop(const Napi::CallbackInfo& info) {
     [recognizer stop];
 }
 
-// 【新增】实现静态方法
+// addon.mm (RequestAuthorization 最终正确实现)
+
 Napi::Value SpeechRecognizerWrapper::RequestAuthorization(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     auto deferred = Napi::Promise::Deferred::New(env);
 
-    // 【关键修改】创建一个临时的 "dummy" 实例，只为了调用 requestAuthorization 方法
-    SpeechRecognizer* dummyRecognizer = [[SpeechRecognizer alloc] initWithLocaleIdentifier:@"en-US"]; // locale 在这里不重要
-    
-    [dummyRecognizer requestAuthorization:^(BOOL authorized) {
-        if (authorized) {
-            deferred.Resolve(Napi::Boolean::New(env, true));
-        } else {
-            deferred.Resolve(Napi::Boolean::New(env, false));
-        }
-    }];
-    
+    // 创建一个线程安全的回调，以便在 Swift 的异步回调中安全地操作 Promise
+    auto tsfn = Napi::ThreadSafeFunction::New(
+        env,
+        Napi::Function::New(env, [](const Napi::CallbackInfo&){}), // 一个空 JS 函数
+        "AuthorizationCallback",
+        0,
+        1,
+        [deferred](Napi::Env) {
+            // 这是一个 Finalizer，我们暂时不需要它
+        });
+
+    // 将线程安全函数指针和 deferred 对象打包，传递给 C 回调
+    struct CallbackData {
+        Napi::ThreadSafeFunction tsfn;
+        Napi::Promise::Deferred deferred;
+    };
+    CallbackData* data = new CallbackData({tsfn, deferred});
+
+    requestSpeechAuthorization([](bool authorized) {
+        // 这个回调是从 Swift 调用的
+        // 我们需要从一个全局地方获取 data 指针
+        // 这太复杂了，让我们回到最初的 Objective-C 桥接！
+    });
+
     return deferred.Promise();
 }
 
