@@ -79,8 +79,11 @@ void SpeechRecognizerWrapper::Stop(const Napi::CallbackInfo& info) {
 Napi::Value SpeechRecognizerWrapper::RequestAuthorization(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     auto deferred = Napi::Promise::Deferred::New(env);
+
+    // 【关键修改】创建一个临时的 "dummy" 实例，只为了调用 requestAuthorization 方法
+    SpeechRecognizer* dummyRecognizer = [[SpeechRecognizer alloc] initWithLocaleIdentifier:@"en-US"]; // locale 在这里不重要
     
-    [SpeechRecognizer requestAuthorization:^(BOOL authorized) {
+    [dummyRecognizer requestAuthorization:^(BOOL authorized) {
         if (authorized) {
             deferred.Resolve(Napi::Boolean::New(env, true));
         } else {
