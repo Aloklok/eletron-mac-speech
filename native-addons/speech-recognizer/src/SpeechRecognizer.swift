@@ -22,7 +22,7 @@ public class SpeechRecognizer: NSObject {
     }
 
     // 请求权限
-    @objc public static func requestAuthorization(completion: @escaping (Bool) -> Void) {
+    @objc public func requestAuthorization(completion: @escaping (Bool) -> Void) {
         SFSpeechRecognizer.requestAuthorization { authStatus in
             DispatchQueue.main.async {
                 completion(authStatus == .authorized)
