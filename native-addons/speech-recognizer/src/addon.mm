@@ -3,7 +3,9 @@
 #include "addon.h"
 #import "speech_recognizer-Swift.h"
 
+// 定义在 .h 中声明的静态成员
 Napi::FunctionReference SpeechRecognizerWrapper::constructor;
+
 
 Napi::Object SpeechRecognizerWrapper::Init(Napi::Env env, Napi::Object exports) {
     Napi::HandleScope scope(env);
@@ -13,8 +15,10 @@ Napi::Object SpeechRecognizerWrapper::Init(Napi::Env env, Napi::Object exports) 
         // 【新增】将静态方法绑定到 JS 类的构造函数上
         StaticMethod("requestAuthorization", &SpeechRecognizerWrapper::RequestAuthorization)
     });
+    // 【恢复】将构造函数保存到静态成员中
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
+
     exports.Set("SpeechRecognizer", func);
     return exports;
 }
