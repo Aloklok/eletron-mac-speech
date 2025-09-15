@@ -10,8 +10,7 @@ Napi::Object SpeechRecognizerWrapper::Init(Napi::Env env, Napi::Object exports) 
     Napi::HandleScope scope(env);
     Napi::Function func = DefineClass(env, "SpeechRecognizer", {
         InstanceMethod("start", &SpeechRecognizerWrapper::Start),
-        InstanceMethod("stop", &SpeechRecognizerWrapper::Stop),
-        StaticMethod("requestAuthorization", &SpeechRecognizerWrapper::RequestAuthorization)
+        InstanceMethod("stop", &SpeechRecognizerWrapper::Stop)
     });
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
@@ -88,23 +87,7 @@ void SpeechRecognizerWrapper::Stop(const Napi::CallbackInfo& info) {
     // 在那里会调用 Unref()，所以这里不需要 Unref()。
 }
 
-// RequestAuthorization 方法：保持最简单的 Objective-C++ 实现
-Napi::Value SpeechRecognizerWrapper::RequestAuthorization(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
-    auto deferred = Napi::Promise::Deferred::New(env);
-    
-    [SFSpeechRecognizer requestAuthorization:^(SFSpeechRecognizerAuthorizationStatus status) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (status == SFSpeechRecognizerAuthorizationStatusAuthorized) {
-                deferred.Resolve(Napi::Boolean::New(env, true));
-            } else {
-                deferred.Resolve(Napi::Boolean::New(env, false));
-            }
-        });
-    }];
-    
-    return deferred.Promise();
-}
+
 
 Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
     return SpeechRecognizerWrapper::Init(env, exports);
