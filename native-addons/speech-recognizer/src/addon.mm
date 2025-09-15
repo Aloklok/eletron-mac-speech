@@ -1,7 +1,8 @@
+// 文件：native-addons/speech-recognizer/src/addon.mm
 #import <Foundation/Foundation.h>
 #include "addon.h"
-// Use the explicit header import, which is more reliable with multiple targets
-#import "speech_recognizer-Swift.h"
+@import speech_recognizer;
+
 Napi::FunctionReference SpeechRecognizerWrapper::constructor;
 
 Napi::Object SpeechRecognizerWrapper::Init(Napi::Env env, Napi::Object exports) {
@@ -9,6 +10,8 @@ Napi::Object SpeechRecognizerWrapper::Init(Napi::Env env, Napi::Object exports) 
     Napi::Function func = DefineClass(env, "SpeechRecognizer", {
         InstanceMethod("start", &SpeechRecognizerWrapper::Start),
         InstanceMethod("stop", &SpeechRecognizerWrapper::Stop),
+        // 【新增】将静态方法绑定到 JS 类的构造函数上
+        StaticMethod("requestAuthorization", &SpeechRecognizerWrapper::RequestAuthorization)
     });
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
@@ -66,6 +69,22 @@ void SpeechRecognizerWrapper::Start(const Napi::CallbackInfo& info) {
 void SpeechRecognizerWrapper::Stop(const Napi::CallbackInfo& info) {
     SpeechRecognizer* recognizer = (SpeechRecognizer*)this->swiftRecognizer;
     [recognizer stop];
+}
+
+// 【新增】实现静态方法
+Napi::Value SpeechRecognizerWrapper::RequestAuthorization(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    auto deferred = Napi::Promise::Deferred::New(env);
+    
+    [SpeechRecognizer requestAuthorization:^(BOOL authorized) {
+        if (authorized) {
+            deferred.Resolve(Napi::Boolean::New(env, true));
+        } else {
+            deferred.Resolve(Napi::Boolean::New(env, false));
+        }
+    }];
+    
+    return deferred.Promise();
 }
 
 // 模块初始化函数
