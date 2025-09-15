@@ -1,7 +1,7 @@
 // 文件：native-addons/speech-recognizer/src/addon.mm
 #import <Foundation/Foundation.h>
 #include "addon.h"
-@import speech_recognizer;
+#import "speech_recognizer-Swift.h"
 
 Napi::FunctionReference SpeechRecognizerWrapper::constructor;
 
