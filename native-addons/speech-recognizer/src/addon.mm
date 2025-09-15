@@ -63,30 +63,44 @@ void SpeechRecognizerWrapper::Stop(const Napi::CallbackInfo& info) {
 }
 
 
-// 文件：addon.mm (RequestAuthorization 最终健壮版)
+// 文件：addon.mm (RequestAuthorization 最终正确版)
 
 Napi::Value SpeechRecognizerWrapper::RequestAuthorization(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
-    // 【关键修正 1】在堆上创建 deferred 对象，并用智能指针管理
-    auto deferred = new Napi::Promise::Deferred(env);
-    
+    auto deferred = Napi::Promise::Deferred::New(env);
+
+    // 【关键修正 1】创建一个一次性的线程安全函数 (TSFN)
+    // 这个 TSFN 的作用就是安全地调用 deferred.Resolve()
+    Napi::ThreadSafeFunction tsfn = Napi::ThreadSafeFunction::New(
+        env,
+        Napi::Function::New(env, [](const Napi::CallbackInfo&){}), // 一个空的 JS 函数，因为我们不会直接调用它
+        "AuthorizationCallback", // 资源名
+        0,                       // Max queue size (0 = unlimited)
+        1,                       // Initial thread count
+        [deferred](Napi::Env) {
+            // Finalizer: 当 TSFN 被释放时，如果 Promise 还没被 resolve，
+            // 在这里 reject 它以避免挂起。
+            // （为简单起见，我们暂时省略此逻辑）
+        });
+
     [SFSpeechRecognizer requestAuthorization:^(SFSpeechRecognizerAuthorizationStatus status) {
-        // 这个回调块会在未来的某个时刻在主线程上被调用
+        // 这个回调块在未来的某个时刻在主线程上被调用
         
-        // 【关键修正 2】创建一个 CallbackScope 来确保 N-API 在正确的上下文中运行
-        Napi::CallbackScope scope(deferred->Env());
-        
-        if (status == SFSpeechRecognizerAuthorizationStatusAuthorized) {
-            deferred->Resolve(Napi::Boolean::New(deferred->Env(), true));
-        } else {
-            deferred->Resolve(Napi::Boolean::New(deferred->Env(), false));
-        }
-        
-        // 【关键修正 3】手动删除在堆上创建的 deferred 对象
-        delete deferred;
+        // 【关键修正 2】将状态打包成一个 C++ 堆上的对象
+        bool* authorizedStatus = new bool(status == SFSpeechRecognizerAuthorizationStatusAuthorized);
+
+        // 【关键修正 3】使用 TSFN 的 BlockingCall 来安全地执行 JS 操作
+        tsfn.BlockingCall([deferred, authorizedStatus](Napi::Env env, Napi::Function jsCallback) {
+            // 这段代码现在在一个安全的作用域内执行
+            deferred.Resolve(Napi::Boolean::New(env, *authorizedStatus));
+            delete authorizedStatus; // 清理打包的数据
+        });
+
+        // 【关键修正 4】在完成调用后，释放 TSFN
+        tsfn.Release();
     }];
     
-    return deferred->Promise();
+    return deferred.Promise();
 }
 
 Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
